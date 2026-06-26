@@ -1,2 +1,4 @@
-/data/*
-/venv
+/data/Music Info.csv
+/data/User Listening History.csv
+/myenv
+/transformer.joblib

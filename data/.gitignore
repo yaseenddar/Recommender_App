@@ -1,0 +1,4 @@
+/cleaned_data.csv
+__pycache__/
+data/transformed_data.npz
+venv/
