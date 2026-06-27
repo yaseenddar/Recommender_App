@@ -72,30 +72,41 @@ def calculate_similarity(input_vector,data):
     # display(similarity_df.iloc[:10])
 
     return similarity_scores    
+import numpy as np
 
-def recommend(song_name,songs_data,transformed_data,k=10):
-    # convert song_name to lowercase
+def recommend(song_name, songs_data, transformed_data, k=10):
+
     song_name = song_name.lower()
 
-    # filterout the song from the data
-    song_row = songs_data[songs_data['name'] == song_name]
-    # get the index of the song 
+    song_row = songs_data[songs_data["name"] == song_name]
+
+    if song_row.empty:
+        return None
+
     song_index = song_row.index[0]
 
-    # generate the input vectpr
-    input_vector = transformed_data[song_index].reshape(1,-1)# convert to 2D sahpe [1,2] to [[1,2]]
+    input_vector = transformed_data[song_index]
 
-    # calculate similarity ascores 
-    similarity_scores = calculate_similarity(input_vector,transformed_data)
-    
-    top_k_songs_indices = similarity_scores.ravel()[-k-1:][::-1]
+    similarity_scores = calculate_similarity(
+        input_vector,
+        transformed_data
+    ).ravel()
 
-    # get the top k osngs
-    top_k_songs_rows = transformed_data[top_k_songs_indices]
+    # Sort by similarity
+    top_k_songs_indices = np.argsort(similarity_scores)[::-1]
+    # Remove the input song
+    top_k_songs_indices = top_k_songs_indices[top_k_songs_indices != song_index]
 
-    top_k_list = top_k_songs_rows[["name","artist","spotify_preview_url"]].reset_index()
+    # Keep only k recommendations
+    # top_k_songs_indices = top_k_songs_indices[:k-1]
+    top_k_songs_indices = np.argsort(similarity_scores.ravel())[-k-1:][::-1]
 
-    return top_k_list
+    # Get rows from DataFrame, not sparse matrix
+    top_k_songs_rows = songs_data.iloc[top_k_songs_indices]
+
+    return top_k_songs_rows[
+        ["name", "artist", "spotify_preview_url"]
+    ].reset_index(drop=True)
 
 def test_recommendation(data_path,song_name,k=10):
         # convert song_name to lowercase
