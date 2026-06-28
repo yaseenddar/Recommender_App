@@ -2,3 +2,6 @@
 __pycache__/
 data/transformed_data.npz
 venv/
+/track_ids.npy
+/collab_filtered_data.csv
+/interaction_matrix.npz
