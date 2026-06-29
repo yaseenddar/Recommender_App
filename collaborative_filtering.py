@@ -94,50 +94,68 @@ def create_interaction_matrix(history_data:dd.DataFrame,track_ids_save_path,save
     # save the sparse matrix
     save_sparse_matrix(interaction_matrix,save_matrix_path)
 
-def collaborative_recommendation(song_name,artist_name,track_ids,songs_data,interaction_matrix):
+def collaborative_recommendation(
+    song_name,
+    artist_name,
+    track_ids,
+    songs_data,
+    interaction_matrix,
+    k=10
+):
 
-    song_name = song_name.lower()
+    # Normalize input
+    song_name = song_name.strip().lower()
+    artist_name = artist_name.strip().lower()
 
-    artist_name = artist_name.lower()
+    # Find the song
+    song_row = songs_data.loc[
+        (songs_data["name"].str.lower() == song_name) |
+        (songs_data["artist"].str.lower() == artist_name)
+    ]
 
-    # fetch the row from 
-    song_row = songs_data.loc[(songs_data["name"] == song_name) & (songs_data["artist"] == artist_name)]
+    if song_row.empty:
+        raise ValueError(f"'{song_name}' by '{artist_name}' not found.")
 
-    # track_id of input song
-    input_trak_id = song_row["track_id"].values.items()
+    # Get track id
+    input_track_id = song_row.iloc[0]["track_id"]
 
-    #  index value of the track_id
-    ind = np.where(track_ids == input_trak_id)[0].item()
+    # Find row index in interaction matrix
+    matches = np.where(track_ids == input_track_id)[0]
 
-    # fetch the input vector 
-    input_array = interaction_matrix[ind]
+    if len(matches) == 0:
+        raise ValueError(f"Track ID '{input_track_id}' not found in track_ids.")
 
-    # get similarty sores
-    similarity_scores = cosine_similarity(input_array,interaction_matrix)
+    input_index = matches[0]
 
-    # index values of recommendations
-    recommendation_indices = np.argsort(similarity_scores.ravel())[-k-1:][::-1]
+    # Get interaction vector
+    input_vector = interaction_matrix[input_index]
 
+    # Compute cosine similarity
+    similarity_scores = cosine_similarity(input_vector, interaction_matrix).flatten()
 
-    # get top k recommendations
-    recommendation_track_ids = track_ids['recommendation_indices']
-    # get top scores
-    top_scores = np.sort(similarity_scores.ravel())[-k-1:][::-1]
+    # Remove the song itself
+    similarity_scores[input_index] = -1
 
-    # get the songs from data and pring
-    scores_df = pd.DataFrame({"track_id":recommendation_track_ids.tolist(),
-                              "score":top_scores})
-    
-    top_k_songs = (
-        songs_data
-        .loc[songs_data["track_id"].isin(recommendation_track_ids)]
-        .merge(scores_df,on="track_id")
-        .sort_values(by="score",ascending=False)
-        .drop(columns=["track_id","score"])
+    # Get top-k indices
+    recommendation_indices = np.argsort(similarity_scores)[-k:][::-1]
+
+    # Convert indices back to track_ids
+    recommendation_track_ids = track_ids[recommendation_indices]
+
+    # Create scores dataframe
+    scores_df = pd.DataFrame({
+        "track_id": recommendation_track_ids,
+        "score": similarity_scores[recommendation_indices]
+    })
+
+    # Merge with songs dataframe
+    recommendations = (
+        songs_data.merge(scores_df, on="track_id")
+        .sort_values("score", ascending=False)
+        .drop(columns=["score"])
         .reset_index(drop=True)
     )
-
-    return top_k_songs
+    return recommendations
 
 def main():
     # load the hsitory data
