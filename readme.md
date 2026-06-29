@@ -25,7 +25,10 @@ A hybrid music recommendation engine that combines **collaborative filtering** (
 - [License](#-license)
 
 ---
-
+## data flow diagram
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
 ## 🚀 Overview
 
 This project solves the music recommendation problem using two distinct paradigms:
