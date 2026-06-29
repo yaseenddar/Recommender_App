@@ -74,12 +74,16 @@ def calculate_similarity(input_vector,data):
     return similarity_scores    
 import numpy as np
 
-def recommend(song_name, songs_data, transformed_data, k=10):
+def content_recommendation(song_name, artist_name,songs_data, transformed_data, k=10):
 
     song_name = song_name.lower()
+    artist_name = artist_name.lower()
 
-    song_row = songs_data[songs_data["name"] == song_name]
-
+    song_row =  song_row = songs_data[
+        (songs_data["name"] == song_name) |
+        (songs_data["artist"] == artist_name)
+    ]
+    print("this iiiiiiiiiiiiiiiiiiiii is song row",song_row)
     if song_row.empty:
         return None
 
@@ -103,7 +107,7 @@ def recommend(song_name, songs_data, transformed_data, k=10):
 
     # Get rows from DataFrame, not sparse matrix
     top_k_songs_rows = songs_data.iloc[top_k_songs_indices]
-
+    print(top_k_songs_rows[0])
     return top_k_songs_rows[
         ["name", "artist", "spotify_preview_url"]
     ].reset_index(drop=True)
